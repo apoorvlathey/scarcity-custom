@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import { HardhatUserConfig } from "hardhat/types";
-import "@typechain/hardhat";
+// import "@typechain/hardhat";
 import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-waffle";
 import "hardhat-deploy";
