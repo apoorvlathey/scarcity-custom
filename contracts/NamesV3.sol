@@ -19,11 +19,11 @@ contract NamesV3 is Ownable {
   uint256 public next_name_id = 1;
 
   rarity_manifested immutable rm;
-  IERC20 immutable usdc;
-  IERC20 immutable wbtc;
   
-  uint256 public nameUsdcPrice;
-  uint256 public nameWbtcPrice;
+  IERC20 public buyToken;  
+  uint256 public buyTokenPrice;
+  // after finalized = true, buyToken and buyTokenPrice can't be updated by owner
+  bool public finalized;
 
   mapping(uint256 => uint256) public summoner_to_name_id; // summoner => nameId
   mapping(uint256 => string) public names;  // nameId => name
@@ -35,34 +35,29 @@ contract NamesV3 is Ownable {
 
   constructor(
     rarity_manifested _rarity_manifested, 
-    IERC20 _usdc,
-    IERC20 _wbtc, 
-    uint256 _nameUsdcPrice,
-    uint256 _nameWbtcPrice
+    IERC20 _buyToken,
+    uint256 _buyTokenPrice
   ) {
     rm = _rarity_manifested;
-    usdc = _usdc;
-    wbtc = _wbtc;
+    buyToken = _buyToken;
+    buyTokenPrice = _buyTokenPrice;
+  }
 
-    nameUsdcPrice = _nameUsdcPrice;
-    nameWbtcPrice = _nameWbtcPrice;
+  modifier isFinalized {
+    require(!finalized, "Finalized!");
+    _;
   }
 
   // --- External Mutative Functions ---
 
-  // @dev Claim a name for a summoner. User must have approved required USDC or WBTC
-  // @param withUSDC if false then pay via WBTC else USDC
-  function claim (string memory name, uint256 summoner, bool withUSDC) external returns (uint256 name_id) {
+  // @dev Claim a name for a summoner. User must have approved required buyToken
+  function claim (string memory name, uint256 summoner) external returns (uint256 name_id) {
     require(_isApprovedOrOwner(summoner), '!owner');
     require(validate_name(name), 'invalid name');
     string memory lower_name = to_lower(name);
     require(!_is_name_claimed[lower_name], 'name taken');
     
-    if (withUSDC) {
-      usdc.safeTransferFrom(msg.sender, address(this), nameUsdcPrice);
-    } else {
-      wbtc.safeTransferFrom(msg.sender, address(this), nameWbtcPrice);
-    }
+    buyToken.safeTransferFrom(msg.sender, address(this), buyTokenPrice);
 
     name_id = next_name_id;
     next_name_id++;
@@ -196,27 +191,26 @@ contract NamesV3 is Ownable {
 
   // --- Admin functions ---
   
-  function withdrawFunds() external onlyOwner {
-    uint256 usdcBalance = usdc.balanceOf(address(this));
-    uint256 wbtcBalance = wbtc.balanceOf(address(this));
+  function withdrawFunds(IERC20 token) external onlyOwner {
+    uint256 tokenBalance = token.balanceOf(address(this));
 
-    usdc.safeTransfer(msg.sender, usdcBalance);
-    wbtc.safeTransfer(msg.sender, wbtcBalance);
+    token.safeTransfer(msg.sender, tokenBalance);
   }
 
-  // ! USDC has 6 decimals
-  function updateNameUsdcPrice(uint256 _new_usdc_price) 
-    external 
-    onlyOwner 
-  {
-    nameUsdcPrice = _new_usdc_price;
+  function setBuyToken(IERC20 _buyToken) external onlyOwner isFinalized {
+    buyToken = _buyToken;
   }
 
-  // ! WBTC has 8 decimals
-  function updateNameWbtcPrice(uint256 _new_wbtc_price) 
-    external 
-    onlyOwner 
-  {
-    nameWbtcPrice = _new_wbtc_price;
+  function setBuyTokenPrice(uint256 _buyTokenPrice) external onlyOwner isFinalized {
+    buyTokenPrice = _buyTokenPrice;
+  }
+
+  function setBuyTokenAndPrice(IERC20 _buyToken, uint256 _buyTokenPrice) external onlyOwner isFinalized {
+    buyToken = _buyToken;
+    buyTokenPrice = _buyTokenPrice;
+  }
+
+  function finalizeBuyToken() external onlyOwner {
+    finalized = true;
   }
 }
