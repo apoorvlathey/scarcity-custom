@@ -43,7 +43,7 @@ contract NamesV3 is Ownable {
     buyTokenPrice = _buyTokenPrice;
   }
 
-  modifier isFinalized {
+  modifier checkFinalized {
     require(!finalized, "Finalized!");
     _;
   }
@@ -197,15 +197,15 @@ contract NamesV3 is Ownable {
     token.safeTransfer(msg.sender, tokenBalance);
   }
 
-  function setBuyToken(IERC20 _buyToken) external onlyOwner isFinalized {
+  function setBuyToken(IERC20 _buyToken) external onlyOwner checkFinalized {
     buyToken = _buyToken;
   }
 
-  function setBuyTokenPrice(uint256 _buyTokenPrice) external onlyOwner isFinalized {
+  function setBuyTokenPrice(uint256 _buyTokenPrice) external onlyOwner checkFinalized {
     buyTokenPrice = _buyTokenPrice;
   }
 
-  function setBuyTokenAndPrice(IERC20 _buyToken, uint256 _buyTokenPrice) external onlyOwner isFinalized {
+  function setBuyTokenAndPrice(IERC20 _buyToken, uint256 _buyTokenPrice) external onlyOwner checkFinalized {
     buyToken = _buyToken;
     buyTokenPrice = _buyTokenPrice;
   }
