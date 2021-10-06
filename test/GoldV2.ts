@@ -16,24 +16,18 @@ import NamesV3Artifact from "../artifacts/contracts/NamesV3.sol/NamesV3.json";
 import RarityArtifact from "../artifacts/contracts/Mocks/rarity.sol/rarity.json";
 import MockERC20Artifact from "../artifacts/contracts/Mocks/MockERC20.sol/MockERC20.json";
 
-// types
-import { GoldV2 } from "../typechain/GoldV2";
-import { NamesV3 } from "../typechain/NamesV3";
-import { IERC20 } from "../typechain/IERC20";
-
 describe("GoldV2", () => {
-  let goldV2: GoldV2;
-  let namesV3: NamesV3;
+  let goldV2: Contract;
+  let namesV3: Contract;
   let rarity: Contract;
-  let usdc: IERC20;
-  let wbtc: IERC20;
+  let usdc: Contract;
+  let wbtc: Contract;
 
   let deployer: SignerWithAddress;
   let user: SignerWithAddress;
 
-  // for tests assuming 18 decimals for both tokens
+  // for tests assuming 18 decimals for tokens
   const USDCPrice = parseEther("1000");
-  const WBTCPrice = parseEther("0.01");
 
   before(async () => {
     [deployer, user] = await ethers.getSigners();
@@ -42,22 +36,17 @@ describe("GoldV2", () => {
     rarity = (await deployContract(deployer, RarityArtifact)) as Contract;
     usdc = (await deployContract(deployer, MockERC20Artifact, [
       user.address,
-    ])) as IERC20;
-    wbtc = (await deployContract(deployer, MockERC20Artifact, [
-      user.address,
-    ])) as IERC20;
+    ])) as Contract;
 
     namesV3 = (await deployContract(deployer, NamesV3Artifact, [
       rarity.address,
       usdc.address,
-      wbtc.address,
       USDCPrice,
-      WBTCPrice,
-    ])) as NamesV3;
+    ])) as Contract;
     goldV2 = (await deployContract(deployer, GoldV2Artifact, [
       rarity.address,
       namesV3.address,
-    ])) as GoldV2;
+    ])) as Contract;
 
     // mint 3 summoners by user
     await rarity.connect(user).summon(1);
@@ -72,7 +61,7 @@ describe("GoldV2", () => {
       const name = "hello1";
 
       await usdc.connect(user).approve(namesV3.address, MaxUint256);
-      await namesV3.connect(user).claim(name, summonerId, true);
+      await namesV3.connect(user).claim(name, summonerId);
     });
 
     it("should claim Gold for named summoner", async () => {
